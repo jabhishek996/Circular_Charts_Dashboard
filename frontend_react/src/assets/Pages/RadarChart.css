@@ -9,6 +9,13 @@ body {
   background-color: #f8fafc;
 }
 
+
+
+.radar-chart-container{
+  width: 100%;
+  display: flex;
+}
+
 .heading h2{
   text-align: center;
 }
@@ -116,6 +123,7 @@ table tbody tr:hover {
 
 
 .radar-wrapper {
+  width: 80%;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -131,6 +139,7 @@ table tbody tr:hover {
   border-top: 1px solid #cbd5e1;
 }
 .heading{
+  width: 20%;
   background-color: #e1e2f8;
   
 }
@@ -138,4 +147,36 @@ table tbody tr:hover {
 .heading h2{
   padding: 12px;
   color: #1e40af;
+}
+
+
+.select-input{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+ align-items: center;
+  
+}
+
+.select-input select,
+.select-input input {
+  width: 90%;
+  border: #cbd5e1;
+  padding: 5px 0;
+
+}
+
+.select-input button{
+  width: 90%;
+  padding: 5px;
+}
+
+.logo{
+  width: 100%;
+  display: flex;justify-content: center;
+  align-items: center;
+}
+
+.logo img {
+  width: 95%;
 }
