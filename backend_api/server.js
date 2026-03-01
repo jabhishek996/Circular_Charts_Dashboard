@@ -16,8 +16,13 @@ app.get('/', (req, res) => {
 app.post('/get/circularchart', async (req, res) => {
     try {
         const params = req.body;
+        if (!params.press || !params.date) {
+            console.warn('Missing required parameters in request body:', params);
+            return res.status(400).json({ status: false, message: 'Missing required parameters: press and date', data: null, err: null });
+        }
         const data = await getCircularChartController.getCircularChartData(params);
-
+        data.press = params.press;
+        data.date = params.date;
         if (!data.status) {
             console.warn('No data returned from getCircularChartData:', data);
             return res.status(404).json(data);
