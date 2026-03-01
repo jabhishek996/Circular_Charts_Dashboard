@@ -38,26 +38,51 @@ const RadarChart = () => {
   const chartRef = useRef(null); // ref to chart for export
 
   const downloadPDF = () => {
-    if (!chartRef.current) return;
+    if (!chartRef.current) {
+      console.warn("Chart not ready for export");
+      return;
+    }
+
     const doc = new jsPDF({ orientation: "landscape" });
     const now = new Date();
-    const timestamp = now.toLocaleString();
+    // use ISO and replace unsafe filename chars
+    const fileStamp = now.toISOString().replace(/[:.]/g, "-");
 
     doc.setFontSize(12);
-    doc.text(`Report Generated At: ${timestamp}`, 14, 20);
-    if (chartRef.current) {
+    doc.text(`Report Generated At: ${now.toLocaleString()}`, 14, 20);
+    doc.text(`Press No: ${selectedTrench || "-"}`, 14, 27);
+    doc.text(`Report for Date: ${date || "-"}`, 14, 34);
+
+    // Obtain chart image from possible ref shapes (wrapper or chart instance)
+    let chartImage = null;
+    try {
+      const ref = chartRef.current;
+      if (ref && typeof ref.toBase64Image === "function") {
+        chartImage = ref.toBase64Image();
+      } else if (ref && ref.chart && typeof ref.chart.toBase64Image === "function") {
+        chartImage = ref.chart.toBase64Image();
+      } else if (ref && ref.chartInstance && typeof ref.chartInstance.toBase64Image === "function") {
+        chartImage = ref.chartInstance.toBase64Image();
+      }
+    } catch (err) {
+      console.error("Error obtaining chart image:", err);
+    }
+
+    if (chartImage) {
       try {
-        const chartImage = chartRef.current.toBase64Image();
         const pageWidth = doc.internal.pageSize.getWidth() - 28;
         const imgProps = doc.getImageProperties(chartImage);
         const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
-        doc.addImage(chartImage, 'PNG', 14, 30, pageWidth, imgHeight);
+        doc.addImage(chartImage, "PNG", 14, 44, pageWidth, imgHeight);
       } catch (err) {
-        console.error('Failed to add chart image to PDF', err);
+        console.error("Failed to add chart image to PDF", err);
+        doc.text("Chart image could not be added.", 14, 44);
       }
+    } else {
+      doc.text("Chart image not available", 14, 44);
     }
 
-    doc.save(`CircularChart_${timestamp}.pdf`);
+    doc.save(`CircularChart_${fileStamp}.pdf`);
   };
 
   // 🔥 API CALL FUNCTION
@@ -190,31 +215,18 @@ const RadarChart = () => {
           />
 
           {/* SUBMIT BUTTON */}
-          <button
+          <button className="submit_btn"
             onClick={loadChart}
-            style={{
-              backgroundColor: "#513cb1",
-              border: "none",
-              color: "white",
-              padding: "10px 30px",
-              borderRadius: "5px"
-            }}
+          
           >
             {loading ? "Loading..." : "Submit"}
           </button>
           {/* download button */}
-          <button
+          <button className="downloadpdf_btn"
             onClick={downloadPDF}
-            style={{
-              backgroundColor: "#2563eb",
-              border: "none",
-              color: "white",
-              padding: "10px 30px",
-              borderRadius: "5px",
-              marginLeft: "5px"
-            }}
+           
           >
-            Download PDF
+           <span style={{fontSize:"20px",fontWeight:"500"}}>🗎</span> Download PDF
           </button>
         </div>
 

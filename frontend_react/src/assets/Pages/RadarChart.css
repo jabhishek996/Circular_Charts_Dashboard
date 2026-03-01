@@ -27,6 +27,7 @@ body {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  background-color: #dae2ec;
 }
 
 .chart-and-table {
@@ -128,6 +129,7 @@ table tbody tr:hover {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  background-color: #dae2ec;
 }
 
 .footer {
@@ -178,5 +180,39 @@ table tbody tr:hover {
 }
 
 .logo img {
-  width: 95%;
+  width: 100%;
+}
+
+
+
+.downloadpdf_btn{
+    background-Color: #2563eb;
+    color: #ffff;
+              border: "none";
+              color: "white";
+              padding: "10px 30px";
+              border-Radius: "5px";
+              margin-Left: "5px";
+              border: none;
+}
+.downloadpdf_btn:hover{
+  background-color: #2564eb54;
+}
+
+
+.submit_btn{background-Color: #513cb1;
+              border: "none";
+              color: "white";
+              padding: "10px 30px";
+              border-Radius: "5px";
+               color: #ffff;
+                 border: none;
+                 
+
+}
+
+.submit_btn:hover{
+  background-Color: #513cb17e;
+ 
+
 }
