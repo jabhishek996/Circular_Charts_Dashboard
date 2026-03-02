@@ -37,53 +37,69 @@ const RadarChart = () => {
 
   const chartRef = useRef(null); // ref to chart for export
 
-  const downloadPDF = () => {
-    if (!chartRef.current) {
-      console.warn("Chart not ready for export");
-      return;
+ const downloadPDF = () => {
+  if (!chartRef.current) {
+    console.warn("Chart not ready for export");
+    return;
+  }
+
+  const doc = new jsPDF({ orientation: "landscape" });
+  const now = new Date();
+  const fileStamp = now.toISOString().replace(/[:.]/g, "-");
+
+  // === Header on same line ===
+  doc.setFontSize(10);
+
+  const startX = 14;
+  const y = 20;
+
+  const text1 = `Report Generated At: ${now.toLocaleString()}`;
+  const text2 = `Press No: ${selectedTrench || "-"}`;
+  const text3 = `Report for Date: ${date || "-"}`;
+
+  const width1 = doc.getTextWidth(text1);
+  const width2 = doc.getTextWidth(text2);
+
+  doc.text(text1, startX, y);
+  doc.text(text2, startX + width1 + 20, y);      // 10px spacing
+  doc.text(text3, startX + width1 + width2 + 40, y);
+
+  // === Horizontal line ===
+  const lineY = y + 4; // a bit below text
+  doc.setLineWidth(0.5);
+  doc.line(startX, lineY, doc.internal.pageSize.getWidth() - 14, lineY);
+
+  // === Chart Image ===
+  let chartImage = null;
+  try {
+    const ref = chartRef.current;
+    if (ref && typeof ref.toBase64Image === "function") {
+      chartImage = ref.toBase64Image();
+    } else if (ref && ref.chart && typeof ref.chart.toBase64Image === "function") {
+      chartImage = ref.chart.toBase64Image();
+    } else if (ref && ref.chartInstance && typeof ref.chartInstance.toBase64Image === "function") {
+      chartImage = ref.chartInstance.toBase64Image();
     }
+  } catch (err) {
+    console.error("Error obtaining chart image:", err);
+  }
 
-    const doc = new jsPDF({ orientation: "landscape" });
-    const now = new Date();
-    // use ISO and replace unsafe filename chars
-    const fileStamp = now.toISOString().replace(/[:.]/g, "-");
-
-    doc.setFontSize(12);
-    doc.text(`Report Generated At: ${now.toLocaleString()}`, 14, 20);
-    doc.text(`Press No: ${selectedTrench || "-"}`, 14, 27);
-    doc.text(`Report for Date: ${date || "-"}`, 14, 34);
-
-    // Obtain chart image from possible ref shapes (wrapper or chart instance)
-    let chartImage = null;
+  if (chartImage) {
     try {
-      const ref = chartRef.current;
-      if (ref && typeof ref.toBase64Image === "function") {
-        chartImage = ref.toBase64Image();
-      } else if (ref && ref.chart && typeof ref.chart.toBase64Image === "function") {
-        chartImage = ref.chart.toBase64Image();
-      } else if (ref && ref.chartInstance && typeof ref.chartInstance.toBase64Image === "function") {
-        chartImage = ref.chartInstance.toBase64Image();
-      }
+      const pageWidth = doc.internal.pageSize.getWidth() - 28;
+      const imgProps = doc.getImageProperties(chartImage);
+      const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
+      doc.addImage(chartImage, "PNG", 14, lineY + 8, pageWidth, imgHeight);
     } catch (err) {
-      console.error("Error obtaining chart image:", err);
+      console.error("Failed to add chart image to PDF", err);
+      doc.text("Chart image could not be added.", 14, lineY + 8);
     }
+  } else {
+    doc.text("Chart image not available", 14, lineY + 8);
+  }
 
-    if (chartImage) {
-      try {
-        const pageWidth = doc.internal.pageSize.getWidth() - 28;
-        const imgProps = doc.getImageProperties(chartImage);
-        const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
-        doc.addImage(chartImage, "PNG", 14, 44, pageWidth, imgHeight);
-      } catch (err) {
-        console.error("Failed to add chart image to PDF", err);
-        doc.text("Chart image could not be added.", 14, 44);
-      }
-    } else {
-      doc.text("Chart image not available", 14, 44);
-    }
-
-    doc.save(`CircularChart_${fileStamp}.pdf`);
-  };
+  doc.save(`CircularChart_${fileStamp}.pdf`);
+};
 
   // 🔥 API CALL FUNCTION
   const loadChart = async () => {
@@ -173,83 +189,94 @@ const RadarChart = () => {
 
 
 
-  return (
-    <div className="radar-chart-container">
-      <div className="heading">
-        <div className="logo"> <img src={MqLogo} alt="logo" /></div>
-        <h2>Circular Chart</h2>
+return (
+  <div className="dashboard">
 
-        <div className="select-input">
+    {/* LEFT SIDEBAR */}
+    <aside className="sidebar">
+      <div className="brand">
+        <img src={MqLogo} alt="logo" />
+        {/* <div>
+          <h3>multiquadrant ind.</h3>
+          <p>controls (i) pvt. ltd.</p>
+        </div> */}
+      </div>
 
-          {/* GROUP DROPDOWN */}
-          <select
-            value={selectedGroup}
-            onChange={(e) => {
-              setSelectedGroup(e.target.value);
-              setSelectedTrench("");
-            }}
-          >
-            <option value="">Select Group</option>
-            {trench_list.Trench_Selection.map((sel, i) => (
-              <option key={i} value={sel}>{sel}</option>
+      <h2 className="page-title">CIRCULAR CHART<br />DASHBOARD</h2>
+
+      <div className="card">
+        <h4>PARAMETER SETTINGS</h4>
+
+        <label>Select Trench</label>
+        <select
+          value={selectedGroup}
+          onChange={(e) => {
+            setSelectedGroup(e.target.value);
+            setSelectedTrench("");
+          }}
+        >
+          <option value="">Select Trench</option>
+          {trench_list.Trench_Selection.map((sel, i) => (
+            <option key={i} value={sel}>{sel}</option>
+          ))}
+        </select>
+
+        <label>Select Machine</label>
+        <select
+          value={selectedTrench}
+          onChange={(e) => setSelectedTrench(e.target.value)}
+        >
+          <option value="">Select Machine</option>
+          {selectedGroup &&
+            trench_list[selectedGroup]?.map((trench, i) => (
+              <option key={i} value={trench}>{trench}</option>
             ))}
-          </select>
+        </select>
 
-          {/* TRENCH DROPDOWN */}
-          <select
-            value={selectedTrench}
-            onChange={(e) => setSelectedTrench(e.target.value)}
-          >
-            <option value="">Select Trench</option>
-            {selectedGroup &&
-              trench_list[selectedGroup]?.map((trench, i) => (
-                <option key={i} value={trench}>{trench}</option>
-              ))}
-          </select>
+        <label>Date</label>
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+        />
 
-          {/* DATE INPUT */}
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
+        <button className="primary-btn" onClick={loadChart}>
+          {loading ? "Loading..." : "Submit"}
+        </button>
 
-          {/* SUBMIT BUTTON */}
-          <button className="submit_btn"
-            onClick={loadChart}
-          
-          >
-            {loading ? "Loading..." : "Submit"}
-          </button>
-          {/* download button */}
-          <button className="downloadpdf_btn"
-            onClick={downloadPDF}
-           
-          >
-           <span style={{fontSize:"20px",fontWeight:"500"}}>🗎</span> Download PDF
-          </button>
-        </div>
-
-        {date && <h2>Date: {date}</h2>}
+        <button className="secondary-btn" onClick={downloadPDF}>
+          Download Report
+        </button>
       </div>
 
-      <div className="radar-wrapper">
-        <div className="radar-container">
-          <div className="chart-section">
-            {chartData ? (
-              <Radar ref={chartRef} data={chartData} options={options} />
-            ) : (
-              <p>Select trench & date → click submit</p>
-            )}
-          </div>
-        </div>
-
-        <footer className="footer">
-          © Multiquadrant Industrial Controls (I) Pvt. Ltd. 2025
-        </footer>
+      <div className="summary card">
+        <h4>REPORT SUMMARY</h4>
+        <p className="date">Date: {date || "-"}</p>
+        <p className="info">
+          Data for: {selectedTrench || "Single Trench"}
+        </p>
       </div>
-    </div>
-  );
+    </aside>
+
+    {/* RIGHT MAIN AREA */}
+    <main className="main-area">
+      <div className="chart-card">
+        {chartData ? (
+          <Radar ref={chartRef} data={chartData} options={options} />
+        ) : (
+          <p className="placeholder">
+            Select trench & date → click submit
+          </p>
+        )}
+      </div>
+
+      <footer>
+        © Multiquadrant Industrial Controls (I) Pvt. Ltd. 2025
+      </footer>
+    </main>
+
+  </div>
+);
 };
 
 export default RadarChart;
